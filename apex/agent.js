@@ -4,6 +4,7 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 async function main() {
   const chatCompletion = await getGroqChatCompletion();
+  // Print the completion returned by the LLM.
   console.log(chatCompletion.choices[0]?.message?.content || "");
 }
 
@@ -12,7 +13,7 @@ async function getGroqChatCompletion() {
     messages: [
       {
         role: "user",
-        message: "Hi, what is special today?",
+        content: "Hi, what is special today? today date is 15 Aug 2026.",
       },
     ],
     model: "llama-3.3-70b-versatile",
