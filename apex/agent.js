@@ -1,74 +1,100 @@
 import Groq from "groq-sdk";
 
+const expenseDB = [];
+
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 async function main() {
   const chatCompletion = await getGroqChatCompletion();
-  // Print the completion returned by the LLM.
-  console.log(JSON.stringify(chatCompletion.choices[0], null, 2));
-
-  const toolCalls = chatCompletion.choices[0].message.tool_calls;
-  if (!toolCalls) {
-    console.log(
-      `Assistant: ${chatCompletion.choices[0].message.content ?? ""}`,
-    );
-    return;
-  }
-
-  for (const tools of toolCalls) {
-    const functionName = tools.function.name;
-    const functionArgs = tools.function.arguments;
-
-    if (functionName === "getTotalExpence") {
-      const result = getTotalExpence(JSON.parse(functionArgs));
-    }
-  }
 }
 
 async function getGroqChatCompletion() {
-  return groq.chat.completions.create({
-    messages: [
-      {
-        role: "system",
-        content: `You're a Apex, a personal finance assistant. Your Task is to assist user with their expenses, balance, and financial plannings.
+  const messages = [
+    {
+      role: "system",
+      content: `You're a Apex, a personal finance assistant. Your Task is to assist user with their expenses, balance, and financial plannings.
           Current DateTime: ${new Date().toUTCString()}
           `,
-      },
-      {
-        role: "user",
-        content: "How much money I spent this month?",
-      },
-    ],
-    tools: [
-      {
-        type: "function",
-        function: {
-          name: "getTotalExpence",
-          description: "get total expence from date to date",
-          parameters: {
-            type: "object",
-            properties: {
-              from: {
-                type: "string",
-                description: "start date to get the expence",
-              },
-              to: {
-                type: "string",
-                description: "end date to get the expence",
+    },
+  ];
+
+  messages.push({
+    role: "user",
+    content: "How much money I spent this month?",
+  });
+
+  while (true) {
+    const chatCompletion = await groq.chat.completions.create({
+      messages: messages,
+      model: "openai/gpt-oss-120b",
+      tools: [
+        {
+          type: "function",
+          function: {
+            name: "getTotalExpense",
+            description: "get total expense from date to date",
+            parameters: {
+              type: "object",
+              properties: {
+                from: {
+                  type: "string",
+                  description: "start date to get the expense",
+                },
+                to: {
+                  type: "string",
+                  description: "end date to get the expense",
+                },
               },
             },
           },
         },
-      },
-    ],
-    model: "llama-3.3-70b-versatile",
-  });
+      ],
+    });
+
+    messages.push(chatCompletion.choices[0].message);
+
+    const toolCalls = chatCompletion.choices[0].message.tool_calls;
+    if (!toolCalls) {
+      console.log(
+        `Assistant: ${chatCompletion.choices[0].message.content ?? ""}`,
+      );
+      break;
+    }
+
+    for (const tool of toolCalls) {
+      const functionName = tool.function.name;
+      const functionArgs = tool.function.arguments;
+
+      let result = "";
+      if (functionName === "getTotalExpense") {
+        result = getTotalExpense(JSON.parse(functionArgs));
+      }
+
+      messages.push({
+        role: "tool",
+        content: result,
+        tool_call_id: tool.id,
+      });
+    }
+
+    console.log(`========================`);
+    console.log(`MSGS >>> ${JSON.stringify(messages, null, 2)}`);
+  }
 }
 
-// tool -> getTotalExpence Function
-function getTotalExpence({ from, to }) {
-  console.log(`calling getTotalExpence fn`);
-  return "12000";
+// tool -> getTotalExpense Function
+function getTotalExpense({ from, to }) {
+  console.log(`calling getTotalExpense fn`);
+  return "12000 INR";
+}
+
+// tool -> addExpense Function
+function addExpense({ name, amount }) {
+  console.log(`adding ${amount} to expense DB for ${name}`);
+  expenseDB.push({
+    name,
+    amount,
+  });
 }
 
 main();
