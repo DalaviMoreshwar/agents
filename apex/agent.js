@@ -23,6 +23,16 @@ async function getGroqChatCompletion() {
     content: "Hey, I just bought a macbook pro for 130000 rupee.",
   });
 
+  messages.push({
+    role: "user",
+    content: "Hey, I just bought a charger for 8000 rupee.",
+  });
+
+  messages.push({
+    role: "user",
+    content: "Hey, what is my expense in this month?",
+  });
+
   while (true) {
     const chatCompletion = await groq.chat.completions.create({
       messages: messages,
