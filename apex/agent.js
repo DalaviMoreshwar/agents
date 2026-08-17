@@ -20,7 +20,7 @@ async function getGroqChatCompletion() {
 
   messages.push({
     role: "user",
-    content: "How much money I spent this month?",
+    content: "Hey, I just bought a macbook pro for 130000 rupee.",
   });
 
   while (true) {
@@ -48,6 +48,27 @@ async function getGroqChatCompletion() {
             },
           },
         },
+        {
+          type: "function",
+          function: {
+            name: "addExpense",
+            description: "Add new expense entry to the expense db",
+            parameters: {
+              type: "object",
+              properties: {
+                name: {
+                  type: "string",
+                  description:
+                    "Name of the expense. e.g. Bought an MacBook Pro",
+                },
+                amount: {
+                  type: "string",
+                  description: "Amount spend for the expense",
+                },
+              },
+            },
+          },
+        },
       ],
     });
 
@@ -68,6 +89,8 @@ async function getGroqChatCompletion() {
       let result = "";
       if (functionName === "getTotalExpense") {
         result = getTotalExpense(JSON.parse(functionArgs));
+      } else if (functionName === "addExpense") {
+        result = addExpense(JSON.parse(functionArgs));
       }
 
       messages.push({
@@ -79,13 +102,19 @@ async function getGroqChatCompletion() {
 
     console.log(`========================`);
     console.log(`MSGS >>> ${JSON.stringify(messages, null, 2)}`);
+    console.log(`========================`);
+    console.log(`DB   >>> ${JSON.stringify(expenseDB, null, 2)}`);
   }
 }
 
 // tool -> getTotalExpense Function
 function getTotalExpense({ from, to }) {
   console.log(`calling getTotalExpense fn`);
-  return "12000 INR";
+  const totalExpense = expenseDB.reduce((acc, item) => {
+    return acc + item.amount;
+  }, 0);
+
+  return `${totalExpense} INR`;
 }
 
 // tool -> addExpense Function
@@ -95,6 +124,7 @@ function addExpense({ name, amount }) {
     name,
     amount,
   });
+  return "Added to the database";
 }
 
 main();
