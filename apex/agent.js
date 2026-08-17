@@ -124,7 +124,7 @@ function addExpense({ name, amount }) {
     name,
     amount,
   });
-  return "Added to the database";
+  return "Added to the database"; // return some text
 }
 
 main();
